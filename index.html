@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cisco IOS Basic Config Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://unpkg.com/vue@next"></script>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+
+
+
+
+    
+    <style>
+
+            h1 {
+                text-shadow:1px 1px 0 #444;
+            }
+
+            label {
+                color: #d6d6d6;
+            }
+
+            .w-100 {
+                width: 100%;
+            }
+
+            .input-width {
+                max-width: 20em;
+            }
+
+            .flex-container {
+                display: flex;
+            }
+
+            .timeout-value-input {
+                width: 4em;
+                display: inline-block;
+            }
+
+            #topbar {
+                background-color: rgb(40, 42, 53);
+            }
+
+            #options-container {
+                min-width: 20em;
+            }
+
+            #script-container textarea {
+                width: 100%;
+                height: 100%;
+                resize: none;
+                border: none;
+                outline: none;
+                font-family: monospace;
+            }
+
+            @media (max-width: 600px) {
+                .flex-container {
+                    flex-direction: column;
+                }
+
+                #smallscreen-spacer {
+                    display: block!important;
+                }
+
+                #script-container textarea {
+                    min-height: 15em;
+                    border: 1px solid #d6d6d6;
+                }
+            }
+
+            #smallscreen-spacer {
+                    display: none;
+            }
+    </style>
+</head>
+
+
+
+
+
+
+<body class="w3-dark-gray">
+
+    <div id="app">
+        <div class="w3-bar" id="topbar">
+            <h1 class="w3-bar-item">Cisco Config Generator</h1>
+        </div>
+        <div class="w3-panel flex-container">
+            <div id="options-container">
+                <button class="w3-button w3-light-gray w3-margin-bottom" @click="saveToBrowserStorage">
+                    Save
+                </button>
+                <button class="w3-button w3-light-gray w3-margin-bottom w3-margin-left" @click="resetToDefaults">
+                    Reset
+                </button>
+                <div>
+                    <input type="checkbox" id="check-hostname" v-model="appData.setHostname" /><label>Set the hostname</label>
+                    <input class="w3-input input-width w3-dark-gray" type="text" v-model="appData.hostname" v-if="appData.setHostname" />
+                </div>
+    
+                <div>
+                    <input type="checkbox" id="check-domain" v-model="appData.setDomain" /><label>Set the domain</label>
+                    <input class="w3-input input-width w3-dark-gray" type="text" v-model="appData.domain" v-if="appData.setDomain" />
+                </div>
+    
+                <div>
+                    <input type="checkbox" id="check-enablesecret" v-model="appData.setEnableSecret" /><label>Set the enable secret</label>
+                    <input class="w3-input input-width w3-dark-gray" type="text" v-model="appData.enableSecret" v-if="appData.setEnableSecret" />
+                </div>
+    
+                <div>
+                    <input type="checkbox" id="check-consolepassword" v-model="appData.setConsolePassword" /><label>Set the console password</label>
+                    <input class="w3-input input-width w3-dark-gray" type="text" v-model="appData.consolePassword" v-if="appData.setConsolePassword" />
+                    <div v-if="appData.setConsolePassword">
+                        <label>Timeout after </label>
+                        <input type="number" class="w3-input w3-small timeout-value-input w3-dark-gray" v-model="appData.consoleTimeoutMinutes" /><label> mins, </label>
+                        <input type="number" class="w3-input w3-small timeout-value-input w3-dark-gray" v-model="appData.consoleTimeoutSeconds" /><label> secs</label>
+                    </div>
+                </div>
+    
+                <div>
+                    <input type="checkbox" id="check-telnet" v-model="appData.setTelnet" @change="appData.setTelnet ? appData.setSsh = false : nothing" /><label>Enable telnet and set a password</label>
+                    <input class="w3-input input-width w3-dark-gray" type="text" v-model="appData.vtyPassword" v-if="appData.setTelnet" />
+                    <div v-if="appData.setTelnet">
+                        <label>Timeout after </label>
+                        <input type="number" class="w3-input w3-small timeout-value-input w3-dark-gray" v-model="appData.telnetTimeoutMinutes" /><label> mins, </label>
+                        <input type="number" class="w3-input w3-small timeout-value-input w3-dark-gray" v-model="appData.telnetTimeoutSeconds" /><label> secs</label>
+                    </div>
+                </div>
+    
+                <div>
+                    <input type="checkbox" id="check-ssh" v-model="appData.setSsh" @change="appData.setSsh ? appData.setTelnet = false : nothing" /><label>Enable SSH and create a user</label>
+                    <input class="w3-input input-width w3-dark-gray" type="text" v-model="appData.sshCreateUsername" v-if="appData.setSsh" />
+                    <input class="w3-input input-width w3-dark-gray" type="text" v-model="appData.sshCreatePassword" v-if="appData.setSsh" />
+                    <div v-if="appData.setSsh">
+                        <label>Timeout after </label>
+                        <input type="number" class="w3-input w3-small timeout-value-input w3-dark-gray" v-model="appData.sshTimeoutMinutes" /><label> mins, </label>
+                        <input type="number" class="w3-input w3-small timeout-value-input w3-dark-gray" v-model="appData.sshTimeoutSeconds" /><label> secs</label>
+                    </div>
+                    
+                </div>
+    
+                <div>
+                    <input type="checkbox" id="check-noipdomainlookup" v-model="appData.setDisableIpDomainLookup" /><label>Disable ip domain lookup in CLI</label>
+                </div>
+                
+                <div>
+                    <input type="checkbox" id="check-noconsolelogging" v-model="appData.setDisableConsoleLogging" /><label>Disable console logging</label>
+                </div>
+
+                <div>
+                    <input type="checkbox" id="check-passwordencryption" v-model="appData.setPasswordEncryption" /><label>Enable password encryption</label>
+                </div>
+
+                <div id="smallscreen-spacer">&nbsp</div>
+            </div>
+    
+            
+            <div id="script-container" class="w3-container w-100">
+                <button class="w3-button w3-light-gray w3-margin-bottom" @click="copyToClipboard">
+                    Copy
+                </button>
+                <button class="w3-button w3-light-gray w3-margin-bottom w3-margin-left" @click="downloadInBrowser(hostname, computedScript)">
+                    Download
+                </button>
+                <textarea class="w3-dark-gray" readonly v-model="computedScript"></textarea>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+    <script>
+        const ccgapp = {
+            data() {
+                return {
+                    appData: {
+                        setHostname: true,
+                        setDomain: true,
+                        setEnableSecret: true,
+                        setConsolePassword: true,
+                        setTelnet: false,
+                        setSsh: true,
+                        setDisableConsoleLogging: true,
+                        setDisableIpDomainLookup: true,
+                        setPasswordEncryption: true,
+
+                        hostname: "Device1",
+                        domain: "lab.local",
+                        enableSecret: "class",
+                        consolePassword: "cisco",
+                        vtyPassword: "cisco",
+                        sshCreateUsername: "admin",
+                        sshCreatePassword: "cisco",
+                        consoleTimeoutMinutes: "10",
+                        consoleTimeoutSeconds: "0",
+                        sshTimeoutMinutes: "10",
+                        sshTimeoutSeconds: "0",
+                        telnetTimeoutMinutes: "10",
+                        telnetTimeoutSeconds: "0",
+                    }
+                }
+            },
+
+            computed: {
+                computedScript() {
+                    var script = ""
+
+                    const consoleExecTimeout = (this.appData.consoleTimeoutMinutes == "10" && this.appData.consoleTimeoutSeconds == "0") ? "" : "exec-timeout " + this.appData.consoleTimeoutMinutes + " " + this.appData.consoleTimeoutSeconds + "\r\n"
+
+                    const telnetExecTimeout = (this.appData.telnetTimeoutMinutes == "10" && this.appData.telnetTimeoutSeconds == "0") ? "" : "exec-timeout " + this.appData.telnetTimeoutMinutes + " " + this.appData.telnetTimeoutSeconds + "\r\n"
+
+                    const sshExecTimeout = (this.appData.sshTimeoutMinutes == "10" && this.appData.sshTimeoutSeconds == "0") ? "" : "exec-timeout " + this.appData.sshTimeoutMinutes + " " + this.appData.sshTimeoutSeconds + "\r\n"
+
+                    if (this.appData.setHostname) { script += "hostname " + this.appData.hostname + "\r\n" }
+                    if (this.appData.setDomain) { script += "ip domain-name " + this.appData.domain + "\r\n" }
+                    if (this.appData.setEnableSecret) { script += "enable secret " + this.appData.enableSecret + "\r\n" }
+                    if (this.appData.setConsolePassword) { script += "line console 0\r\npassword " + this.appData.consolePassword + "\r\nlogin\r\n" + consoleExecTimeout }
+                    if (this.appData.setTelnet) { script += "line vty 0 4\r\npassword " + this.appData.vtyPassword + "\r\nlogin\r\n" + telnetExecTimeout }
+                    if (this.appData.setSsh) { script += "crypto key generate rsa\r\n2048\r\nip ssh version 2\r\nline vty 0 4\r\ntransport input ssh\r\nlogin local\r\n" + sshExecTimeout + "username " + this.appData.sshCreateUsername + " password " + this.appData.sshCreatePassword + "\r\n"}
+                    if (this.appData.setDisableIpDomainLookup) { script += "no ip domain-lookup\r\n"}
+                    if (this.appData.setDisableConsoleLogging) { script += "no logging console\r\n"}
+                    if (this.appData.setPasswordEncryption) { script += "service password-encryption\r\n"}
+
+                    return script
+                }
+            },
+
+            methods: {
+
+                // Insert the current Cisco IOS script (this.computedScript) into the user's clipboard
+                copyToClipboard() {
+                    navigator.clipboard.writeText(this.computedScript)
+                },
+
+
+                // Creates a file for the user to download in their browser
+                downloadInBrowser(filename, text) {
+                    let element = document.createElement('a');
+                    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                    element.setAttribute('download', filename);
+
+                    element.style.display = 'none';
+                    document.body.appendChild(element);
+
+                    element.click();
+
+                    document.body.removeChild(element);
+                },
+
+
+                // Save appData into the browser's localStorage (Key name: "ccgapp")
+                saveToBrowserStorage() {
+                    localStorage.ccgapp = JSON.stringify(this.appData)
+                },
+
+
+                // Merge the default appData with the appData loaded from localStorage
+                loadFromBrowserStorage() {
+                    
+                    // Merging is better than just loading localStorage into appData because
+                    // if any values are missing/not loaded, the default value will be there.
+                    this.appData = {
+                        ...this.appData,
+                        ...JSON.parse(localStorage.ccgapp)
+                    }
+                },
+
+
+                // Reset all values to defaults
+                resetToDefaults() {
+                    // This is a bit dirty, but overwrites the entire current vue data() with defaults
+                    // (The defaults are the ones defined above in data() and are actually loaded in 
+                    // this app before loadFromBrowserStorage() is called)
+
+                    Object.assign(this.$data, this.$options.data())
+                }
+            },
+
+            mounted() {
+                // After this app is loaded in the browser, call the function to load saved user data from
+                // browser storage (only if saved data exists)
+                if (localStorage.ccgapp) {
+                    this.loadFromBrowserStorage()
+                }
+            }
+        }
+
+        // Mount the app defined above into the HTML object with the id "app"
+        app = Vue.createApp(ccgapp)
+        vm = app.mount("#app")
+    </script>
+</body>
+</html>
